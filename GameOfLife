@@ -1,0 +1,64 @@
+import sys
+
+class GameOfLife:
+
+	def __init__(self, aliveCells): 
+		self.neighborCoordinates = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+		self.maxSize = sys.maxsize
+		self.aliveCells = self.getStartingCells(aliveCells)
+
+	def getStartingCells(self, aliveCells) -> 'dict[tuple[int, int], Cell]':
+		startingCells = {}
+		for x, y in aliveCells:
+			if x in range(self.maxSize + 1) and y in range(self.maxSize + 1):
+				startingCells[(x, y)] = Cell(x, y, 1)
+
+		return startingCells
+
+	def getNeighborXYCoordinate(self, cell, dx, dy) -> 'tuple(int, int)':
+		originCell = self.aliveCells[cell]
+		return ((originCell.x + dx, originCell.y + dy))
+
+	def getDeadCells(self) -> 'dict[tuple[int, int], Cell]':
+		deadCells = {}
+		for cell in self.aliveCells:
+			for dx, dy in self.neighborCoordinates:
+				neighbor = self.getNeighborXYCoordinate(cell, dx, dy)
+				if neighbor in self.aliveCells:
+					self.aliveCells[neighbor].aliveNeighbors += 1
+				else:
+					if neighbor in deadCells:
+						deadCells[neighbor].aliveNeighbors += 1
+					else:
+						if neighbor[0] in range(self.maxSize + 1) and neighbor[1] in range(self.maxSize +  1):
+							deadCells[neighbor] = Cell(neighbor[0], neighbor[1], 0)
+
+		return deadCells
+
+	def killDyingCells(self):
+		cellsToRemove = []
+		for cell in self.aliveCells:
+			if self.aliveCells[cell].aliveNeighbors < 2 or self.aliveCells[cell].aliveNeighbors > 3:
+				cellsToRemove.append(cell)
+
+		for cell in cellsToRemove:
+			self.aliveCells.pop(cell)
+
+	def birthReproducingCells(self, deadCells):
+		for cell in deadCells:
+			if deadCells[cell].aliveNeighbors == 3:
+				self.aliveCells[cell] = Cell(cell[0], cell[1], 1)
+
+	def generateNextSequence(self):
+		deadCells = self.getDeadCells()
+		self.killDyingCells()
+		self.birthReproducingCells(deadCells)
+
+class Cell:
+
+	def __init__(self, x, y, state):
+		self.x = x
+		self.y = y
+		self.state = state
+		self.aliveNeighbors = 0 if state == 1 else 1
+
